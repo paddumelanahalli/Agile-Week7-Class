@@ -1,76 +1,56 @@
-# PRO QA TIP: Don't just check the 'Box', check the 'Contents'
-"""
-def process_data(items):
-    assert isinstance(items, list), "Must be a list" # Shallow
-    assert all(isinstance(x, int) for x in items), "Contents must be integers" # Deep
-"""
-
-import sys
+def process_scores_shallow(scores):
+    """Only checks the 'Box' (Is it a list?)"""
+    assert isinstance(scores, list), "ERROR: Must be a list!"
+    # PITFALL: If the list contains a string, this line crashes the program!
+    return sum(scores)
 
 
-def process_transaction_shallow(data):
-    """
-    PITFALL: This only checks if the container is a list.
-    It does NOT check if the contents are safe to process.
-    """
-    assert isinstance(data, list), "QA Error: Input must be a list!"
+def process_scores_deep(scores):
+    """Checks the 'Box' AND the 'Contents'"""
+    assert isinstance(scores, list), "ERROR: Must be a list!"
+    assert len(scores) > 0, "ERROR: List cannot be empty!"
 
-    # This line will CRASH if data contains a string or None
-    total = sum(data)
-    return total
+    # THE DEEP GUARD: Ensure every item is a number (int or float)
+    assert all(isinstance(s, (int, float)) for s in scores), "CRITICAL: All scores must be numeric!"
 
-
-def process_transaction_deep(data):
-    """
-    PRO STANDARD: Checks the 'Box' AND the 'Contents'.
-    This is true Defensive Programming.
-    """
-    # 1. Identity Check
-    assert isinstance(data, list), "QA Error: Input must be a list!"
-
-    # 2. Size Check
-    assert len(data) > 0, "QA Error: Transaction list cannot be empty!"
-
-    # 3. Content Check (The Deep Guard)
-    # We use all() to verify every single item is an int or float
-    assert all(isinstance(x, (int, float)) for x in data), "CRITICAL: Non-numeric data detected in transactions!"
-
-    return sum(data)
+    return sum(scores)
 
 
-# --- MAIN EXECUTION BLOCK ---
 if __name__ == "__main__":
-    # Test Data: A list that looks okay but has a 'hidden' string error
-    dirty_batch = [10.50, 20.00, "Error_500", 5.75]
+    # Case 1: The "Dirty" Data
+    # A list of numbers, but someone accidentally typed "A" instead of 90.
+    dirty_data = [85, 92, "A", 78]
 
-    print("=== STARTING UCSC QA AUDIT ===")
+    print("--- Starting QA Audit ---")
 
-    # 1. Demonstrate the Shallow Pitfall
-    print("\n[TEST 1] Running Shallow Validation...")
+    # TEST 1: The Shallow Failure
     try:
-        result = process_transaction_shallow(dirty_batch)
-        print(f"Success! Total: {result}")
-    except Exception as e:
-        print(f"FAILED: Shallow check let bad data in. Python crashed with: {type(e).__name__}")
-        print(f"Reason: {e}")
+        print("Attempting Shallow Validation...")
+        result = process_scores_shallow(dirty_data)
+        print(f"Result: {result}")
+    except TypeError as e:
+        print(f"FAILED: The Shallow Check let bad data in, and Python CRASHED with: {e}")
 
-    print("-" * 40)
+    print("-" * 30)
 
-    # 2. Demonstrate the Deep Defense
-    print("[TEST 2] Running Deep Validation...")
+    # TEST 2: The Deep Success
     try:
-        result = process_transaction_deep(dirty_batch)
-        print(f"Success! Total: {result}")
-    except AssertionError as error:
-        print(f"PASSED: The Deep Guard caught the error before the crash!")
-        print(f"QA Shield Message: {error}")
+        print("Attempting Deep Validation...")
+        result = process_scores_deep(dirty_data)
+        print(f"Result: {result}")
+    except AssertionError as e:
+        print(f"SUCCESS: The Deep Guard caught the bad data early! Error Message: {e}")
 
-    print("\n=== AUDIT COMPLETE ===")
+    print("--- Audit Complete ---")
 
 """
-The Error Type: Note that Test 1 results in a TypeError (Python's internal engine failed), while Test 2 results in an AssertionError (Our QA Shield successfully intercepted the threat).
+The "Try/Except" logic: It shows students how to "trap" a crash so the whole system doesn't go down.
 
-The all() Function: Explain that this is the most efficient way to perform a deep check on the Big 4 structures. It stops checking as soon as it finds the first error (Short-circuit logic).
+The all() function: This is a "Big 4" power move. It’s the most efficient way to scan a List or Set for integrity.
 
-The isinstance(x, (int, float)): Show them that they can check for multiple types at once by using a Tuple inside isinstance.
+The TypeError vs. AssertionError: * In Test 1, the Language (Python) crashed.
+
+In Test 2, the QA Shield (Assert) stopped it.
+
+"Students, you want your Assert to catch the error before Python crashes. If Python crashes, you didn't do your job as a QA Engineer."
 """
